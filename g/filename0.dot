@@ -1,3 +1,0 @@
-digraph abc{ 
-node [shape = circle, ordering=out];"state 0" -> "state 1" [ label="a" ]; 
-}
