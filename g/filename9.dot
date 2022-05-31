@@ -1,0 +1,12 @@
+digraph abc{ 
+node [shape = circle, ordering=out];"state 11" -> "state 9" [ label="a" ]; 
+"state 11" -> "state 9" [ label="you" ]; 
+"state 7" -> "state 9" [ label="you" ]; 
+"state 0" -> "state 13" [ label="a" ]; 
+"state 0" -> "state 1" [ label="canner" ]; 
+"state 0" -> "state 1" [ label="as" ]; 
+"state 0" -> "state 11" [ label="can" ]; 
+"state 0" -> "state 9" [ label="you" ]; 
+"state 13" -> "state 11" [ label="can" ]; 
+"state 9" -> "state 11" [ label="can" ]; 
+}

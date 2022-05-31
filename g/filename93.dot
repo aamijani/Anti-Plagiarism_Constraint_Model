@@ -1,0 +1,3 @@
+digraph abc{ 
+"state 0" -> "state 1" [ label="a" ]; 
+}

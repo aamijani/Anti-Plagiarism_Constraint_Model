@@ -1,0 +1,14 @@
+digraph abc{ 
+"state 2" -> "state 3" [ label="you" ]; 
+"state 4" -> "state 3" [ label="a" ]; 
+"state 4" -> "state 3" [ label="you" ]; 
+"state 3" -> "state 6" [ label="can" ]; 
+"state 0" -> "state 1" [ label="canner" ]; 
+"state 0" -> "state 3" [ label="a" ]; 
+"state 0" -> "state 1" [ label="as" ]; 
+"state 0" -> "state 6" [ label="can" ]; 
+"state 0" -> "state 3" [ label="you" ]; 
+"state 6" -> "state 3" [ label="a" ]; 
+"state 6" -> "state 1" [ label="as" ]; 
+"state 6" -> "state 3" [ label="you" ]; 
+}

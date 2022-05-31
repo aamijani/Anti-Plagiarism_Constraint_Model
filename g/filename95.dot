@@ -1,0 +1,5 @@
+digraph abc{ 
+"state 0" -> "state 1" [ label="a" ]; 
+"state 0" -> "state 1" [ label="canner" ]; 
+"state 0" -> "state 1" [ label="as" ]; 
+}
