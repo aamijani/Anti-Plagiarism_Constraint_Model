@@ -2,9 +2,9 @@ Token.java
  Token
 FiniteStateAutomaton.java
  FiniteStateAutomaton
-Main.java
- Main
-State.java
- State
 LetterToken.java
  LetterToken
+State.java
+ State
+Main.java
+ Main
