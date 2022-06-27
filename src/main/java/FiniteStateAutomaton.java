@@ -5,19 +5,19 @@ import java.util.Set;
 
 public class FiniteStateAutomaton {
     public Set<State> Q = new HashSet<>();
-    public Set<LetterToken> sigma = new HashSet<>();
-    public Map<State, Map<LetterToken, State>> delta = new HashMap<>();
+    public Set<String> sigma = new HashSet<>();
+    public Map<State, Map<String, State>> delta = new HashMap<>();
     public State q_0 = newState();
     public Set<State> F = new HashSet<>();
 
-    public FiniteStateAutomaton(Set<LetterToken> _sigma){
+    public FiniteStateAutomaton(Set<String> _sigma){
         sigma = _sigma;
     }
 
     public State newState() {
         State newState = new State();
         Q.add(newState);
-        delta.put(newState, new HashMap<LetterToken, State>());
+        delta.put(newState, new HashMap<String, State>());
         return newState;
     }
 

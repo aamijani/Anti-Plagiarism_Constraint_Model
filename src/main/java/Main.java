@@ -1,3 +1,4 @@
+import javax.net.ssl.SSLContext;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -5,19 +6,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main<T extends Token> {
-    //KALIKIMAKA
-    //can you can a can as a canner can can a can
-
-    private static Set<LetterToken> sigma = new HashSet<LetterToken>();
-
+    private static Set<String> sigma = new HashSet<String>();
     private static FiniteStateAutomaton M = new FiniteStateAutomaton(sigma);
-    private static final List<ArrayList<LetterToken>> N = new ArrayList<>();
-    private static final Map<LetterToken, State> Q = new HashMap<>();
-    private static final Map<State, Map<State, Set<LetterToken>>> a = new HashMap<>();
-    private static final List<ArrayList<LetterToken>> C = new ArrayList<>();
-    public static final Map<State, ArrayList<LetterToken>> w = new HashMap<>();
+    private static final List<ArrayList<String>> N = new ArrayList<>();
+    private static final Map<String, State> Q = new HashMap<>();
+    private static final Map<State, Map<State, Set<String>>> a = new HashMap<>();
+    private static final List<ArrayList<String>> C = new ArrayList<>();
+    public static final Map<State, ArrayList<String>> w = new HashMap<>();
     public static final List<State> Q_trie = new ArrayList<>();
-    private static LinkedList<LetterToken> input = new LinkedList<>();
+    private static LinkedList<String> input = new LinkedList<>();
     public static final Map<State, ArrayList<State>> S = new HashMap<>();
     public static int type = 1000;
 
@@ -28,35 +25,93 @@ public class Main<T extends Token> {
         defineC();
 
         MarkovAutomaton();
-        MaxOrderMarkovAutomaton();
-
-        int n = 0;
-        System.out.println("Do you want to produce a sequence from the automaton?");
-        Scanner sc=new Scanner(System.in);
-        String str= sc.nextLine();
-        if (str.equals("y") || str.equals("Y")){
-            System.out.println("Enter the length of output: ");
-            n = sc.nextInt();
+        LinkedList<State> statestoremove1 = new LinkedList<>();
+        for (State s : M.delta.keySet()){
+            if (M.delta.get(s).isEmpty()){
+                statestoremove1.add(s);
+                System.out.println("yes");
+                for (State s1 : M.delta.keySet()){
+                    if (M.delta.get(s1).containsValue(s)){
+                        statestoremove1.remove(s);
+                        System.out.println("yes 1");
+                    }
+                }
+            }
+        }
+        System.out.println(M.delta);
+        for (State s : statestoremove1) {
+            M.delta.remove(s);
+            System.out.println("removed state "+ s);
         }
 
+        graphsToFile(M.delta);
+        MaxOrderMarkovAutomaton();
+        LinkedList<State> statestoremove2 = new LinkedList<>();
+        for (State s : M.delta.keySet()){
+            if (M.delta.get(s).isEmpty()){
+                statestoremove2.add(s);
+                System.out.println("yes");
+                for (State s1 : M.delta.keySet()){
+                    if (M.delta.get(s1).containsValue(s)){
+                        statestoremove2.remove(s);
+                        System.out.println("yes 1");
+                    }
+                }
+            }
+        }
+        System.out.println(M.delta);
+        for (State s : statestoremove2) {
+            M.delta.remove(s);
+            System.out.println("removed state "+ s);
+        }
+        graphsToFile(M.delta);
+
+        CreateSubsequence();
+    }
+
+    private static void CreateSubsequence() {
+        int n = 0;
+        System.out.println("Would you like to produce a non-plagiaristic subsequence from your input? [y/n]");
+        Scanner sc = new Scanner(System.in);
+        String str = sc.nextLine();
+        if (str.equals("y") || str.equals("Y")) {
+            System.out.println("Enter your preferred length of the subsequence: ");
+            n = sc.nextInt();
+        }
+        System.out.println();
         String s = "";
-        Map<LetterToken, State> set = M.delta.get(M.q_0);
-        for (int i = 0; i < n; i++){
+
+        Map<String, State> set = M.delta.get(M.q_0);
+        int i = 0;
+        while (i < n) {
             Random rand = new Random();
+            if (set.size() <= 0) {
+                set = M.delta.get(M.q_0);
+                s = "";
+                i = 0;
+                continue;
+            }
             int randIndex = rand.nextInt(set.size());
-            LetterToken key = (LetterToken) set.keySet().toArray()[randIndex];
+            String key = (String) set.keySet().toArray()[randIndex];
             State value = set.get(key);
             s = s.concat(key.toString());
-            if (type == 0){
+            if (type == 1) {
                 s = s.concat(" ");
             }
             set = M.delta.get(value);
+            i++;
+        }
+
+        if (type == 1){
+            s = s.substring(0, 1).toUpperCase() + s.substring(1);
+            s = s.substring(0,s.length() - 1);
+            s = s.concat(".");
         }
         System.out.println(s);
     }
 
-    private static LinkedList<LetterToken> getInput() throws IOException {
-        LinkedList<LetterToken> listLetterToken = new LinkedList<>();
+    private static LinkedList<String> getInput() throws IOException {
+        LinkedList<String> listLetterToken = new LinkedList<>();
         String pathname = "input.txt";
         File file = new File(pathname);
         StringBuilder fileContents = new StringBuilder((int) file.length());
@@ -65,22 +120,22 @@ public class Main<T extends Token> {
             while (scanner.hasNextLine()) {
                 fileContents.append(scanner.nextLine()).append(System.lineSeparator());
             }
-            String[] words = fileContents.toString().split("\\s+");
+            String[] words = fileContents.toString().replaceAll("[^A-Za-z\\s]", "").replaceAll("\\s{2,}", " ").toLowerCase().split("\\s+");
             if (words.length <= 1) {
                 type = 0;
                 char[] strArr = fileContents.toString().toCharArray();
                 for (char c : strArr) {
                     if (!(c == ' ')) {
-                        LetterToken lt = new LetterToken(Character.toString(c));
+                        String lt = new String(Character.toString(c));
                         listLetterToken.add(lt);
                     }
                 }
                 listLetterToken.removeLast();
             }
-            type = 1;
             if (words.length > 1) {
+                type = 1;
                 for (String str : words) {
-                    LetterToken lt = new LetterToken(str);
+                    String lt = new String(str);
                     listLetterToken.add(lt);
                 }
             }
@@ -97,17 +152,17 @@ public class Main<T extends Token> {
 
 
     private static void MaxOrderMarkovAutomaton() {
-        for (ArrayList<LetterToken> a_i : N) {
-            LetterToken a1 = a_i.get(0);
+        for (ArrayList<String> a_i : N) {
+            String a1 = a_i.get(0);
             State q = Q.get(a1);
             q = separate(q, a1);
-            M.delta.put(q, new HashMap<LetterToken, State>());
+            M.delta.put(q, new HashMap<String, State>());
             w.put(q, new ArrayList<>());
             w.get(q).add(a1);
         }
 
         //Compute the trie of no-goods
-        for (ArrayList<LetterToken> a1_L : N) {
+        for (ArrayList<String> a1_L : N) {
             State q = M.q_0;
             int i = 1;
             while (M.delta.get(q).containsKey(a1_L.get(i - 1))) {
@@ -120,7 +175,6 @@ public class Main<T extends Token> {
                 Q_trie.add(q_prime);
                 M.F.add(q_prime);
                 M.delta.get(q).put(a1_L.get(j), q_prime);
-                graphsToFile(M.delta);
                 w.put(q_prime, new ArrayList<>());
                 for (int k = 0; k <= j; k++) {
                     w.get(q_prime).add(a1_L.get(k));
@@ -133,12 +187,12 @@ public class Main<T extends Token> {
 
         for (State q : Q_trie) {
             S.put(q, new ArrayList<State>());
-            ArrayList<LetterToken> a1 = w.get(q);
+            ArrayList<String> a1 = w.get(q);
             for (State q_prime : Q_trie) {
-                ArrayList<LetterToken> a2 = w.get(q_prime);
+                ArrayList<String> a2 = w.get(q_prime);
                 int n = a2.size() - a1.size();
                 if (n >= 0 && !(a1.equals(a2))) {
-                    List<LetterToken> substring = a2.subList((a2.size() - a1.size()), (a2.size()));
+                    List<String> substring = a2.subList((a2.size() - a1.size()), (a2.size()));
                     if (substring.equals(a1)) {
                         S.get(q).add(q_prime);
                     }
@@ -149,14 +203,16 @@ public class Main<T extends Token> {
         for (State q : M.Q) {
             if (!Q_trie.contains(q) && M.delta.get(M.q_0).containsValue(q)) {
                 S.put(q, new ArrayList<State>());
-                ArrayList<LetterToken> a1 = w.get(q);
+                ArrayList<String> a1 = w.get(q);
                 for (State q_prime : Q_trie) {
-                    ArrayList<LetterToken> a2 = w.get(q_prime);
-                    int n = a2.size() - a1.size();
-                    if (n >= 0 && !(a1.equals(a2))) {
-                        List<LetterToken> substring = a2.subList((a2.size() - a1.size()), (a2.size()));
-                        if (substring.equals(a1)) {
-                            S.get(q).add(q_prime);
+                    ArrayList<String> a2 = w.get(q_prime);
+                    if (a2 != null && a1 != null) {
+                        int n = a2.size() - a1.size();
+                        if (n >= 0 && !(a1.equals(a2))) {
+                            List<String> substring = a2.subList((a2.size() - a1.size()), (a2.size()));
+                            if (substring.equals(a1)) {
+                                S.get(q).add(q_prime);
+                            }
                         }
                     }
                 }
@@ -167,9 +223,9 @@ public class Main<T extends Token> {
         Map<State, ArrayList<String>> w2 = new HashMap<>();
         for (State key : w.keySet()) {
             w2.put(key, new ArrayList<>());
-            ArrayList<LetterToken> value = w.get(key);
+            ArrayList<String> value = w.get(key);
             if (value != null) {
-                for (LetterToken element : value) {
+                for (String element : value) {
                     if (element != null) {
                         w2.get(key).add(element.toString());
                     }
@@ -188,13 +244,12 @@ public class Main<T extends Token> {
 
 
         for (State q : sortedQ_Trie) {
-            for (LetterToken a : sigma) {
+            for (String a : sigma) {
                 if (M.delta.get(q).containsKey(a)) {
                     for (State q_prime : S.get(q)) {
                         if (!M.delta.get(q_prime).containsKey(a)) {
                             State toState = M.delta.get(q).get(a);
                             M.delta.get(q_prime).put(a, toState);
-                            graphsToFile(M.delta);
 
                         }
                     }
@@ -204,20 +259,19 @@ public class Main<T extends Token> {
 
 
         for (State q : Q_trie) {
-            Map<State, Set<LetterToken>> map2 = a.get(q);
-            Set<LetterToken> strSet = new HashSet<>();
-            for (Map.Entry<State, Set<LetterToken>> entry : map2.entrySet()) {
+            Map<State, Set<String>> map2 = a.get(q);
+            Set<String> strSet = new HashSet<>();
+            for (Map.Entry<State, Set<String>> entry : map2.entrySet()) {
                 strSet = entry.getValue();
             }
-            LetterToken a1 = strSet.iterator().next();
+            String a1 = strSet.iterator().next();
 
-            for (LetterToken a2 : sigma) {
-                for (ArrayList<LetterToken> substring : C) {
+            for (String a2 : sigma) {
+                for (ArrayList<String> substring : C) {
                     if (substring.get(0).equals(a1) && substring.get(1).equals(a2)) {
                         if (!M.delta.get(q).containsKey(a2)) {
                             if (!M.delta.get(M.q_0).containsValue(Q.get(a2))) {
                                 M.delta.get(q).put(a2, Q.get(a2));
-                                graphsToFile(M.delta);
                             }
                         }
                     }
@@ -231,11 +285,10 @@ public class Main<T extends Token> {
             if (!M.F.contains(s1)) {
                 M.Q.remove(s1);
                 M.delta.remove(s1);
-                for (Map.Entry<State, Map<LetterToken, State>> entry : new ArrayList<>(M.delta.entrySet())) {
-                    for (LetterToken s : new ArrayList<>(M.delta.get(entry.getKey()).keySet())) {
+                for (Map.Entry<State, Map<String, State>> entry : new ArrayList<>(M.delta.entrySet())) {
+                    for (String s : new ArrayList<>(M.delta.get(entry.getKey()).keySet())) {
                         if (M.delta.get(entry.getKey()).get(s).equals(s1)) {
                             M.delta.get(entry.getKey()).remove(s);
-                            graphsToFile(M.delta);
                         }
                     }
                 }
@@ -245,48 +298,43 @@ public class Main<T extends Token> {
     }
 
     private static void MarkovAutomaton() {
-        defineC();
         State q = newState();                                              //line 2
         a.get(q).put(M.q_0, new HashSet<>());
 
-        for (LetterToken symbol : sigma) {                                 //line 4
+        for (String symbol : sigma) {                                      //line 4
             M.delta.get(M.q_0).put(symbol, q);                             //line 5
-            graphsToFile(M.delta);
 
             Q.put(symbol, q);                                              //line 6
             a.get(q).get(M.q_0).add(symbol);
         }
-
         M.F.add(M.q_0);
         M.F.add(q);                                                        //line 7
 
-        for (ArrayList<LetterToken> a1_a2 : C) {                           //line 8
-            LetterToken a1 = a1_a2.get(0);
-            LetterToken a2 = a1_a2.get(1);
+        for (ArrayList<String> a1_a2 : C) {                                //line 8
+            String a1 = a1_a2.get(0);
+            String a2 = a1_a2.get(1);
 
             State q_1 = Q.get(a1);                                         //line 9
             q = separate(q_1, a1);                                         //line 10
             State q_2 = Q.get(a2);                                         //line 11
 
             M.delta.get(q).put(a2, q_2);                                   //line 12
-            graphsToFile(M.delta);
             // if exists q'inQ s.t. q and q' are equivalent...
             for (State q_prime : M.Q) {                                    //line 13
                 if (M.delta.get(q_prime).equals(M.delta.get(q))) {         //line 14
-                    Map<State, Set<LetterToken>> statesPointingToq = a.get(q);
-                    for (Map.Entry<State, Set<LetterToken>> entry : statesPointingToq.entrySet()) {
+                    Map<State, Set<String>> statesPointingToq = a.get(q);
+                    for (Map.Entry<State, Set<String>> entry : statesPointingToq.entrySet()) {
                         a.get(q_prime).put(entry.getKey(), entry.getValue());
 
-                        for (LetterToken s : entry.getValue()) {
+                        for (String s : entry.getValue()) {
                             M.delta.get(entry.getKey()).remove(s, q);
                             M.delta.get(entry.getKey()).put(s, q_prime);
-                            graphsToFile(M.delta);
                         }
                     }
 
                     Q.put(a1, q_prime);
                     if (!q.toString().equals(q_prime.toString())) {
-                        M.delta.put(q, new HashMap<LetterToken, State>());
+                        M.delta.put(q, new HashMap<String, State>());
                     }
                     break;
                 }
@@ -294,7 +342,7 @@ public class Main<T extends Token> {
         }
     }
 
-    public static void graphsToFile(Map<State, Map<LetterToken, State>> delta) {
+    public static void graphsToFile(Map<State, Map<String, State>> delta) {
         String dir = "GraphViz/";
         String pngFileName = "filename";
         long count = 0;
@@ -306,17 +354,43 @@ public class Main<T extends Token> {
             e.printStackTrace();
         }
         try {
-            File myObj = new File("g/filename" + count + ".dot");
+            File myObj = new File("GraphViz/filename" + count + ".dot");
             if (myObj.createNewFile()) {
+                System.out.println("File created: " + myObj.getName());
                 try {
-                    BufferedWriter bw = new BufferedWriter(new FileWriter("g/filename" + count + ".dot", true));
+                    BufferedWriter bw = new BufferedWriter(new FileWriter("GraphViz/filename" + count + ".dot", true));
                     bw.append("digraph abc{ \n");
+                    bw.append("node [shape = circle, ordering=out];");
 
-                    for (Map.Entry<State, Map<LetterToken, State>> entry : delta.entrySet()) {
-                        for (Map.Entry<LetterToken, State> entry2 : entry.getValue().entrySet()) {
-                            bw.append(String.format("\"%s\" -> \"%s\" [ label=\"%s\" ]; \n", entry.getKey(), entry2.getValue(), entry2.getKey()));
+                    State newState = new State();
+
+                    bw.append(String.format("\"%s\" [ label= \"\", shape = none ]; \n", newState));
+                    bw.append(String.format("\"%s\" [ label= \"\" ]; \n", M.q_0));
+                    bw.append(String.format("\"%s\" -> \"%s\"  [ label=\"\" ]; \n", newState,M.q_0));
+
+                    Set<String> printedNodes = new HashSet<>();
+                    for (Map.Entry<State, Map<String, State>> entry : delta.entrySet()) {
+                        if(!printedNodes.contains(entry.getKey().toString())) {
+                            if (entry.getKey() != M.q_0) {
+                                bw.append(String.format("\"%s\" [ label= \"\" ]; \n", entry.getKey()));
+                                printedNodes.add(entry.getKey().toString());
+                            }
                         }
+                        for (Map.Entry<String, State> entry2 : entry.getValue().entrySet()) {
+                            if(!printedNodes.contains(entry2.getValue().toString())){
+                                if (entry.getKey() != M.q_0) {
+                                    bw.append(String.format("\"%s\" [ label= \"\" ]; \n", entry2.getValue()));
+                                    printedNodes.add(entry2.getValue().toString());
+                                }
+                            }
+                        }
+                    }
 
+
+                    for (Map.Entry<State, Map<String, State>> entry : delta.entrySet()) {
+                        for (Map.Entry<String, State> entry2 : entry.getValue().entrySet()){
+                            bw.append(String.format("\"%s\" -> \"%s\" [ label=\"%s\" ]; \n", entry.getKey(),entry2.getValue(), entry2.getKey()));
+                        }
                     }
                     bw.append("}");
                     bw.close();
@@ -330,14 +404,13 @@ public class Main<T extends Token> {
             System.out.println("An error occurred.");
             e.printStackTrace();
         }
-
     }
 
-    public static State separate(State q_1, LetterToken a1) {
+    public static State separate(State q_1, String a1) {
         State q = newState();                                                   //line 17
         M.F.add(q);                                                             //line 18
 
-        for (LetterToken a : sigma) {                                           //line 19
+        for (String a : sigma) {                                           //line 19
             if (M.delta.containsKey(q_1) && M.delta.get(q_1).containsKey(a)) {
                 State toState = M.delta.get(q_1).get(a);                        //line 20
                 M.delta.get(q_1).remove(a, toState);
@@ -347,7 +420,7 @@ public class Main<T extends Token> {
         }
 
         for (State q_prime : M.Q) {                                             //line 21
-            if (M.delta.get(q_prime).containsKey(a1) && M.delta.get(q_prime).get(a1).equals(q_1)) {
+            if (M.delta.containsKey(q_prime) && M.delta.get(q_prime).containsKey(a1) && M.delta.get(q_prime).get(a1).equals(q_1)) {
                 M.delta.get(q_prime).put(a1, q);                                //line 22
                 a.get(q).put(q_prime, new HashSet<>(Arrays.asList(a1)));
             }
@@ -359,7 +432,7 @@ public class Main<T extends Token> {
     private static void defineN() {
         for (int i = 0; i < input.size(); i++) {
             if (i + 4 < input.size() + 1) {
-                ArrayList<LetterToken> l1 = new ArrayList<>();
+                ArrayList<String> l1 = new ArrayList<>();
                 l1.add(input.get(i));
                 l1.add(input.get(i + 1));
                 l1.add(input.get(i + 2));
@@ -374,7 +447,7 @@ public class Main<T extends Token> {
     public static void defineC() {
         for (int i = 0; i < input.size(); i++) {
             if (i + 2 < input.size()) {
-                ArrayList<LetterToken> l1 = new ArrayList<>();
+                ArrayList<String> l1 = new ArrayList<>();
                 l1.add(input.get(i));
                 l1.add(input.get(i + 1));
                 if (!C.contains(l1)) {
